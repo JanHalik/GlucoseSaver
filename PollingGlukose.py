@@ -1,4 +1,6 @@
 import os
+import signal
+import sys
 import asyncio
 from datetime import datetime
 from pylibrelinkup import PyLibreLinkUp, APIUrl
@@ -9,7 +11,11 @@ PASSWORD = "MHDiaObvodova1"
 INTERVAL = 600
 CSV_FILE = "glucose.csv"
 
+def handle_sigterm(signum, frame):
+    print("Service Glucose is stopping...")
+    sys.exit(0)
 
+signal.signal(signal.SIGTERM, handle_sigterm)
 async def fetch_latest(client, patient_id):
     return await asyncio.to_thread(
         client.latest, patient_identifier=patient_id
@@ -45,7 +51,7 @@ async def main():
     csv_lines = []
 
     if not os.path.exists(CSV_FILE):
-        csv_lines.append("timestamp,glucose,unit")
+        await asyncio.to_thread(write_csv, "timestamp,glucose,unit")
 
     try:
         while True:
@@ -55,9 +61,9 @@ async def main():
                 timestamp = data.timestamp
                 value = data.value
 
-                print(f"{timestamp} -> {value} mol/l")
-                csv_lines.append(f"{timestamp},{value},mol/l")
-
+                csv_line=f"{timestamp},{value},mol/l"
+                print(csv_line)
+                await asyncio.to_thread(write_csv, csv_line,f"{patient.first_name}_{patient.last_name}")
             except Exception as e:
                 print(
                     f"[{datetime.now().isoformat(timespec='seconds')}] Chyba: {e}"
@@ -68,16 +74,20 @@ async def main():
     except KeyboardInterrupt:
         print("Ukončení pomocí Ctrl+C")
 
-    finally:
-        await asyncio.to_thread(write_csv, csv_lines)
-        print(f"CSV uloženo do souboru: {CSV_FILE}")
-
-
-def write_csv(lines):
-    with open(CSV_FILE, "a", encoding="utf-8") as f:
-        for line in lines:
-            f.write(line + "\n")
-
+def get_csv_file(patient):
+    """Vrátí název souboru pro dnešní den"""
+    day_prefix = datetime.now().strftime("%Y-%m-%d")
+    filename = f"{day_prefix}_{patient}_glucose.csv"
+    return filename
+def write_csv(line,patient):
+    csv_file = get_csv_file(patient)
+    # pokud soubor ještě neexistuje, přidej hlavičku
+    if not os.path.exists(csv_file):
+        with open(csv_file, "w", encoding="utf-8") as f:
+            f.write("timestamp,glucose,unit\n")
+    # zapis datový řádek
+    with open(csv_file, "a", encoding="utf-8") as f:
+        f.write(line + "\n")
 
 if __name__ == "__main__":
     asyncio.run(main())

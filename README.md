@@ -14,11 +14,12 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/python3 ~/git/GlucoseSaver/PoolingGlukose.py
+ExecStart=/home/ubuntu/git/GlucoseSaver/.venv/bin/python /home/ubuntu/git/GlucoseSaver/PoolingGlukose.py
 Restart=always
 User=ubuntu
-WorkingDirectory=/home/ubuntu
-
+WorkingDirectory=/home/ubuntu/git/GlucoseSaver
+StandardOutput=journal
+StandardError=journal
 [Install]
 WantedBy=multi-user.target
 
