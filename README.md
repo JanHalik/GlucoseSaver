@@ -5,3 +5,28 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip3 install --no-input -r requirements.txt
 python PollingGlukose.py
+
+# Run as service
+# /etc/systemd/system/glucose.service
+[Unit]
+Description=My Python Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 ~/git/GlucoseSaver/PoolingGlukose.py
+Restart=always
+User=ubuntu
+WorkingDirectory=/home/ubuntu
+
+[Install]
+WantedBy=multi-user.target
+
+# Run service commands
+sudo systemctl daemon-reload
+sudo systemctl enable glucose.service
+sudo systemctl start glucose.service
+# Check status
+sudo systemctl status glucose.service
+# Stop service
+sudo systemctl stop glucose.service
