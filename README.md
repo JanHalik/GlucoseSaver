@@ -23,6 +23,22 @@ StandardError=journal
 [Install]
 WantedBy=multi-user.target
 
+# /etc/systemd/system/glucose_api.service
+[Unit]
+Description=My Python Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/home/ubuntu/git/GlucoseSaver/.venv/bin/uvicorn /home/ubuntu/git/GlucoseSaver/GlukoseAPI.app --host 0.0.0.0 --port 8088
+Restart=always
+User=ubuntu
+WorkingDirectory=/home/ubuntu/git/GlucoseSaver
+StandardOutput=journal
+StandardError=journal
+[Install]
+WantedBy=multi-user.target
+
 # Run service commands
 sudo systemctl daemon-reload
 sudo systemctl enable glucose.service

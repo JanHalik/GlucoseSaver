@@ -9,7 +9,6 @@ EMAIL = "halik.jan@gmail.com"
 PASSWORD = "MHDiaObvodova1"
 
 INTERVAL = 600
-CSV_FILE = "glucose.csv"
 
 def handle_sigterm(signum, frame):
     print("Service Glucose is stopping...")
@@ -48,11 +47,6 @@ async def main():
 
     print(f"Sleduji pacienta: {patient.first_name} {patient.last_name}")
 
-    csv_lines = []
-
-    if not os.path.exists(CSV_FILE):
-        await asyncio.to_thread(write_csv, "timestamp,glucose,unit")
-
     try:
         while True:
             try:
@@ -77,7 +71,7 @@ async def main():
 def get_csv_file(patient):
     """Vrátí název souboru pro dnešní den"""
     day_prefix = datetime.now().strftime("%Y-%m-%d")
-    filename = f"{day_prefix}_{patient}_glucose.csv"
+    filename = f"data/{day_prefix}_{patient}_glucose.csv"
     return filename
 def write_csv(line,patient):
     csv_file = get_csv_file(patient)

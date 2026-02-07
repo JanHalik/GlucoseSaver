@@ -1,1 +1,3 @@
 pylibrelinkup @ git+https://github.com/robberwick/pylibrelinkup.git
+uvicorn
+fastapi
