@@ -54,8 +54,8 @@ def read_csv_sync(path: Path):
     return rows
 
 
-@app.post("/upload/", dependencies=[Depends(verify_api_password)])
-async def upload_csv(date: str, name: str):
+@app.post("/download/", dependencies=[Depends(verify_api_password)])
+async def download(date: str, name: str):
     filename = f"{date}_{name}_glucose.csv"
     file_path = (CSV_DIR / filename).resolve()
 
