@@ -6,6 +6,8 @@ import AppLayout from "./layouts/AppLayout";
 import { DarkModeProvider } from "./contexts/DarkModeContext";
 
 function App() {
+  const GLUCOSE_API_HOST = import.meta.env.VITE_GLUCOSE_API_HOST;
+  const GLUCOSE_API_PORT = import.meta.env.VITE_GLUCOSE_API_PORT;
   const [token, setToken] = useState(localStorage.getItem("GlucoseToken"));
   const [expired, setExpired] = useState(false);
 
@@ -25,7 +27,7 @@ function App() {
 
   const [data, setData] = useState(null);
   useEffect(() => {
-   fetch(`http://localhost:8082/all_data?name=glucose`,{
+   fetch(`http://${GLUCOSE_API_HOST}:${GLUCOSE_API_PORT}/all_data?name=glucose`,{
     method: "GET",
     headers: {
       "x-api-password": `${token}`,

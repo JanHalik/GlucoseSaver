@@ -11,6 +11,8 @@ from datetime import datetime
 import json
 
 API_PASSWORD = os.getenv("API_PASSWORD", "change-me")
+REACT_HOST = os.getenv("REACT_HOST", "localhost")
+REACT_PORT = os.getenv("REACT_PORT", "5173")
 app = FastAPI()
 
 CSV_DIR = Path("data").resolve()
@@ -31,7 +33,7 @@ def verify_api_password(x_api_password: str = Header(...)):
         raise HTTPException(status_code=401, detail="Invalid API password")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[f"http://130.162.239.159:5173"],
+    allow_origins=[f"http://{REACT_HOST}:{REACT_PORT}"],
     allow_credentials=True,
     allow_methods=["GET"],
     allow_headers=["*"],
