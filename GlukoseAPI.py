@@ -31,7 +31,7 @@ def verify_api_password(x_api_password: str = Header(...)):
         raise HTTPException(status_code=401, detail="Invalid API password")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[f"http://localhost:5173"],
+    allow_origins=[f"http://130.162.239.159:5173"],
     allow_credentials=True,
     allow_methods=["GET"],
     allow_headers=["*"],
