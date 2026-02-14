@@ -57,3 +57,12 @@ sudo systemctl stop glucose.service
 sudo iptables -L -n -v
 sudo iptables -I INPUT -p tcp --dport 8088 -j ACCEPT
 sudo netfilter-persistent save
+# install Node22 on Ubuntu
+sudo apt install npm
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt install -y nodejs
+node -v
+npm -v
+npm create vite@latest glucose-app -- --template react
+cd glucose-app
+npm run dev
