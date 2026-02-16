@@ -1,25 +1,6 @@
-import "chartjs-adapter-date-fns";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { cs } from "date-fns/locale";
-import {
-  Chart as ChartJS,
-  LineElement,
-  LinearScale,
-  PointElement,
-  Tooltip,
-  TimeScale
-} from "chart.js";
-import annotationPlugin from "chartjs-plugin-annotation";
 import { Line } from "react-chartjs-2";
-
-ChartJS.register(
-  LineElement,
-  LinearScale,
-  PointElement,
-  Tooltip,
-  TimeScale,
-  annotationPlugin
-);
+import { cs } from "date-fns/locale";
 
 function addDays(dateStr, diff) {
   if (!dateStr) return "";

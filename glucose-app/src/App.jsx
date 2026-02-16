@@ -4,6 +4,7 @@ import LoginForm from "./components/LoginForm";
 import AppThemeProvider from "./components/AppThemeProvider";
 import AppLayout from "./layouts/AppLayout";
 import { DarkModeProvider } from "./contexts/DarkModeContext";
+import "./chartjs";
 
 function App() {
   const GLUCOSE_API_HOST = import.meta.env.VITE_GLUCOSE_API_HOST;
@@ -81,3 +82,5 @@ export default App;
 // npm install chart.js react-chartjs-2
 // npm install chartjs-adapter-date-fns
 // npm run dev
+// npm run build
+// npm run preview -- --host 0.0.0.0 --port 5173
