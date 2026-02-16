@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import GlucoseChart from "./components/GlucoseGraphDaD";
+import GlucoseChart from "./components/GlucoseGraphTimeScale";
 import LoginForm from "./components/LoginForm";
 import AppThemeProvider from "./components/AppThemeProvider";
 import AppLayout from "./layouts/AppLayout";
@@ -79,4 +79,5 @@ export default App;
 // npm install @mui/material @mui/icons-material @emotion/react @emotion/styled
 
 // npm install chart.js react-chartjs-2
+// npm install chartjs-adapter-date-fns
 // npm run dev
