@@ -18,13 +18,21 @@ export default function GlucoseChart({ data }) {
   // inicializace dne z dat
   useEffect(() => {
     if (safeData.length === 0) return;
+    let lastValid;
+    for (let i = safeData.length - 1; i >= 0; i--) {
+      const d = safeData[i];
+      if (d?.timestamp && !isNaN(new Date(d.timestamp))) {
+        lastValid = d;
+        break;
+      }
+    }
 
-    const firstValid = safeData.find(
-      d => d?.timestamp && !isNaN(new Date(d.timestamp))
-    );
-    if (!firstValid) return;
+    // const firstValid = safeData.find(
+    //   d => d?.timestamp && !isNaN(new Date(d.timestamp))
+    // );
+    // if (!firstValid) return;
 
-    setSelectedDate(firstValid.timestamp.slice(0, 10));
+    setSelectedDate(lastValid.timestamp.slice(0, 10));
   }, [safeData]);
 
   // kolečko + shift
