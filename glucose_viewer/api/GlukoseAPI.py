@@ -1,9 +1,9 @@
-from fastapi import FastAPI, Request, HTTPException, Header, Depends
+from fastapi import FastAPI, Request, HTTPException, Header, Depends, APIRouter
 from fastapi.responses import JSONResponse
 from fastapi.responses import FileResponse
 from pathlib import Path
 import csv
-import time
+
 import asyncio
 import os
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,55 +17,9 @@ app = FastAPI()
 
 CSV_DIR = Path("data").resolve()
 
-# jednoduchý in-memory rate limit (1 req / 1s)
-last_request_time = 0.0
-lock = asyncio.Lock()
-
-
-EXCLUDED_PATHS = {
-    "/docs",
-    "/openapi.json",
-    "/redoc",
-    "/favicon.ico",
-}
 def verify_api_password(x_api_password: str = Header(...)):
     if x_api_password != API_PASSWORD:
         raise HTTPException(status_code=401, detail="Invalid API password")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[f"http://{REACT_HOST}:{REACT_PORT}"],
-    allow_credentials=True,
-    allow_methods=["GET"],
-    allow_headers=["*"],
-)
-
-RATE_LIMIT = 5
-WINDOW_SECONDS = 1.0
-
-request_times = []
-lock = asyncio.Lock()
-@app.middleware("http")
-async def rate_limit(request: Request, call_next):
-    if request.url.path in EXCLUDED_PATHS:
-        return await call_next(request)
-
-    async with lock:
-        now = time.time()
-
-        # odstranit staré requesty mimo časové okno
-        while request_times and request_times[0] <= now - WINDOW_SECONDS:
-            request_times.pop(0)
-
-        if len(request_times) >= RATE_LIMIT:
-            return JSONResponse(
-                status_code=429,
-                content={"detail": "Too Many Requests"},
-            )
-
-        request_times.append(now)
-
-    return await call_next(request)
-
 
 def read_csv_sync(path: Path):
     rows = []
@@ -74,8 +28,8 @@ def read_csv_sync(path: Path):
         rows.extend(reader)
     return rows
 
-
-@app.post("/download/", dependencies=[Depends(verify_api_password)])
+router = APIRouter(prefix="/view")
+@router.post("/download/", dependencies=[Depends(verify_api_password)])
 async def download(date: str, name: str):
     filename = f"{date}_{name}_glucose.csv"
     file_path = (CSV_DIR / filename).resolve()
