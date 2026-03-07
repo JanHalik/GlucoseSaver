@@ -2,6 +2,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from typing import Optional
 from enum import Enum
 from glucose_viewer import manager
+from glucose_viewer.schemas.glucose import Glucose
 router = APIRouter(prefix="/view")
 import os,logging
 log = logging.getLogger("viewer")
@@ -33,26 +34,25 @@ class MessageType(str, Enum):
     ERRORS = "error_count"
     SERVICES_COUNT = "services_count"
 # Webhook function for notifiing entity change
-async def notify_entity_change(type:MessageType,operation:WSOperation, entity: EntityName,  data:dict, patient_id: str, entity_id: str=None):
-    log.info({"type":type,"operation":operation, "entity": entity, "id": entity_id, "data":data})
-    await manager.broadcast({"type":type,"operation":operation, "entity": entity, "id": entity_id, "data":data},patient_id)
+async def notify_entity_change(type:MessageType,operation:WSOperation, entity: EntityName,  data:dict, patient_id: str):
+    log.info({"type":type,"operation":operation, "entity": entity, "data":data, "patient_id": patient_id})
+    await manager.broadcast({"type":type,"operation":operation, "entity": entity, "data":data},patient_id)
 
 @router.post(
-    "/websocket/notify/{operation}/{entity_name}/{entity_id}/{patient_id}",
+    "/websocket/notify/{operation}/{entity_name}/{patient_id}",
     summary="Entity change notification",
     tags=["Websocket"],
 )
 
 async def notify_change(
+    request: Glucose,
     operation: WSOperation,
     entity_name: EntityName,
-    entity_id: int,
     patient_id: str,
-    aditional_id: Optional[str] = None,
 ):
-    log.info(f"WS notify: {operation}/{entity_name}/{entity_id}/{patient_id}/{aditional_id}")
-    data={}
+    log.info(f"WS notify: {operation}/{entity_name}/{patient_id} - {request}")
+    data={"datetime":request.timestamp.isoformat(), "value": request.value}
     #Only if some active WS connection for specific tenant
     if manager.has_patient_connection(patient_id):
-        await notify_entity_change(MessageType.STATISTICS,WSOperation.ADD,entity_name, data, patient_id, entity_id)
-        return
+        await notify_entity_change(MessageType.ENTITY,WSOperation.ADD,entity_name, data, patient_id)
+    return data
