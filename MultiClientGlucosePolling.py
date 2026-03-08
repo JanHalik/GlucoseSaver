@@ -167,8 +167,10 @@ def WS_notify_service(operation: WSOperation, patient_id: int, datetime: datetim
             logging.log(msg=f"Viewer notification: {operation.value}/{EntityName.GLUCOSE.value}/{patient_id}",level=logging.INFO)
             url = f"{VIEWER_URL}/view/websocket/notify/{operation.value}/{EntityName.GLUCOSE.value}/{patient_id}"
             glucose = Glucose(value=value, timestamp=datetime)
+            logging.log(msg=f"Notification payload: {glucose}", level=logging.INFO)
+            breakpoint()
             async with httpx.AsyncClient(timeout=2) as client:
-                await client.post(url, json=glucose.model_dump_json())
+                await client.post(url, json=glucose.model_dump(mode="json"), headers={"Content-Type": "application/json", "Accept": "application/json"})
         except Exception as e:
             logging.log(msg=f"Viewer notification skipped: {e}",level=logging.ERROR)
 
