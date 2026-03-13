@@ -5,3 +5,4 @@ prometheus-fastapi-instrumentator
 httpx
 sqlalchemy
 psycopg2-binary
+passlib[argon2]

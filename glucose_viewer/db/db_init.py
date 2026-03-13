@@ -13,15 +13,28 @@ def init_db():
 
     if not db_exists:
 
-        # CLIENT
+        # APP_USER
         cursor.execute("""
-        CREATE TABLE Client (
+        CREATE TABLE AppUser (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             Login TEXT NOT NULL UNIQUE,
             FirstName TEXT,
             LastName TEXT,
             Email TEXT,
+            PhoneNumber TEXT,
             Password TEXT NOT NULL
+        );
+        """)
+        # CLIENT
+        cursor.execute("""
+        CREATE TABLE Client (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            Email TEXT,
+            Password TEXT NOT NULL,
+            AppUserID INTEGER NOT NULL,
+            FOREIGN KEY (AppUserID)
+                REFERENCES AppUser(id)
+                ON DELETE CASCADE
         );
         """)
 
@@ -87,6 +100,14 @@ def init_db():
         cursor.execute("""
         CREATE INDEX idx_patient_time
         ON Patient_data(PatientID, Time);
+        """)
+        cursor.execute("""
+        CREATE INDEX idx_client_appuser
+        ON Client(AppUserId);
+        """)
+        cursor.execute("""
+        CREATE UNIQUE INDEX idx_appuser_login
+        ON AppUser(Login);
         """)
         conn.commit()
         print("Glucose database created and initialized.")

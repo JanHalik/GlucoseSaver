@@ -37,3 +37,28 @@ def delete_client(client_id: int, db: Session = Depends(get_db)):
     db.delete(client)
     db.commit()
     return {"status": "deleted"}
+
+@router.get("/{client_id}/patients", response_model=list[schemas.Patient])
+def get_client_patients(client_id: int, db: Session = Depends(get_db)):
+
+    client = db.query(models.Client).filter(
+        models.Client.id == client_id
+    ).first()
+
+    if not client:
+        raise HTTPException(
+            status_code=404,
+            detail="Client not found"
+        )
+
+    patients = (
+        db.query(models.Patient)
+        .join(
+            models.ClientPatientAG,
+            models.Patient.id == models.ClientPatientAG.PatientID
+        )
+        .filter(models.ClientPatientAG.ClientID == client_id)
+        .all()
+    )
+
+    return patients

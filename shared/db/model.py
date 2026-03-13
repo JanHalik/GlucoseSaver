@@ -11,20 +11,28 @@ from sqlalchemy import (
 from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
+class AppUser(Base):
+    __tablename__ = "AppUser"
 
+    id = Column(Integer, primary_key=True, index=True)
+    Login = Column(String(45), unique=True, nullable=False)
+    Password = Column(String(255), nullable=False)
+    Email = Column(String(45))
+    FirstName = Column(String(45))
+    LastName = Column(String(45))
+    PhoneNumber = Column(String(20))
 
+    clients = relationship("Client", back_populates="app_user")
 class Client(Base):
     __tablename__ = "Client"
 
     id = Column(Integer, primary_key=True, index=True)
-    Login = Column(String(45), unique=True, nullable=False)
-    FirstName = Column(String(45))
-    LastName = Column(String(45))
     Email = Column(String(45))
-    Password = Column(String, nullable=False)
+    Password = Column(String(255))
+    AppUserId = Column(Integer, ForeignKey("AppUser.id"))
 
+    app_user = relationship("AppUser", back_populates="clients")
     patients = relationship("ClientPatientAG", back_populates="client")
-
 
 class Patient(Base):
     __tablename__ = "Patient"

@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from glucose_viewer.api import GlukoseAPI, WebSocket, clients, patients, measurements, relationCP
+from glucose_viewer.api import GlukoseAPI, WebSocket, clients, patients, measurements, relationCP, appUsers
 from glucose_viewer.exceptions.exceptions  import GlucoseAPIException
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -22,6 +22,7 @@ def include_routers(app) -> FastAPI:
     app.include_router(patients.router)
     app.include_router(measurements.router)
     app.include_router(relationCP.router)
+    app.include_router(appUsers.router)
 
 
 

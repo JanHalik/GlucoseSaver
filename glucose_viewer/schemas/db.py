@@ -1,11 +1,26 @@
 from pydantic import BaseModel, SecretStr
 from datetime import datetime
 
+class AppUserBase(BaseModel):
+    Login: str
+    Email: str | None = None
+    FirstName: str | None = None
+    LastName: str | None = None
+    PhoneNumber: str | None = None
+
+
+class AppUserCreate(AppUserBase):
+    Password: SecretStr
+
+
+class AppUser(AppUserBase):
+    id: int
+
+    class Config:
+        from_attributes = True
 
 class ClientBase(BaseModel):
-    Login: str
-    FirstName: str | None
-    LastName: str | None
+    AppUserId: int
     Email: str | None
 
 
@@ -62,6 +77,11 @@ class ClientPatientAGBase(BaseModel):
 class ClientPatientAGCreate(ClientPatientAGBase):
     pass
 
+class ClientPatientByName(BaseModel):
+    client_firstname: str
+    client_lastname: str
+    patient_firstname: str
+    patient_lastname: str
 
 class ClientPatientAG(ClientPatientAGBase):
     idClientPatientAG: int

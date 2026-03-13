@@ -16,3 +16,53 @@ def create_relation(rel: schemas.ClientPatientAGCreate, db: Session = Depends(ge
 @router.get("")
 def get_relations(db: Session = Depends(get_db)):
     return db.query(models.ClientPatientAG).all()
+
+@router.post("/by-name", response_model=schemas.ClientPatientAG)
+def create_relation_by_name(
+    rel: schemas.ClientPatientByName,
+    db: Session = Depends(get_db)
+):
+
+    # find client
+    client = (
+        db.query(models.Client)
+        .filter(
+            models.Client.FirstName == rel.client_firstname,
+            models.Client.LastName == rel.client_lastname
+        )
+        .first()
+    )
+
+    if not client:
+        raise HTTPException(
+            status_code=404,
+            detail="Client not found"
+        )
+
+    # find patient
+    patient = (
+        db.query(models.Patient)
+        .filter(
+            models.Patient.FirstName == rel.patient_firstname,
+            models.Patient.LastName == rel.patient_lastname
+        )
+        .first()
+    )
+
+    if not patient:
+        raise HTTPException(
+            status_code=404,
+            detail="Patient not found"
+        )
+
+    # create relation
+    relation = models.ClientPatientAG(
+        ClientID=client.id,
+        PatientID=patient.id
+    )
+
+    db.add(relation)
+    db.commit()
+    db.refresh(relation)
+
+    return relation
