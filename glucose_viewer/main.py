@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from glucose_viewer.api import GlukoseAPI, WebSocket
+from glucose_viewer.api import GlukoseAPI, WebSocket, clients, patients, measurements, relationCP
 from glucose_viewer.exceptions.exceptions  import GlucoseAPIException
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -18,10 +18,14 @@ log = logging.getLogger("viewer")
 def include_routers(app) -> FastAPI:
     app.include_router(GlukoseAPI.router)
     app.include_router(WebSocket.router)
+    app.include_router(clients.router)
+    app.include_router(patients.router)
+    app.include_router(measurements.router)
+    app.include_router(relationCP.router)
 
 
 
-app = FastAPI(title="Glucose viewer API", version=API_VERSION, docs_url="/docs", openapi_url="/openapi.json", root_path=os.getenv("VITE_VIEWER_ROOT_PATH", ""))
+app = FastAPI(title="Glucose viewer API", version=API_VERSION, docs_url="/docs", openapi_url="/openapi.json", root_path=os.getenv("VITE_GLUCOSE_ROOT_PATH", ""))
 
 # Registr Prometheus metrcs
 Instrumentator().instrument(app).expose(app, endpoint="/metrics")

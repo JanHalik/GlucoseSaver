@@ -1,7 +1,7 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from typing import Optional
 from enum import Enum
-from glucose_viewer import manager
+import glucose_viewer.manager
 from glucose_viewer.schemas.glucose import Glucose
 router = APIRouter(prefix="/view")
 import os,logging

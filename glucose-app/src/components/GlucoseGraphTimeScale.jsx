@@ -11,6 +11,11 @@ function addDays(dateStr, diff) {
 }
 
 export default function GlucoseChart({ data }) {
+  const GLUCOSE_WS_PROTOCOL = GLUCOSE_API_PROTOCOL === 'https' ? 'wss' : 'ws';
+  const GLUCOSE_API_HOST = window.__ENV__?.VITE_GLUCOSE_API_HOST ??   import.meta.env.VITE_GLUCOSE_API_HOST;
+  const GLUCOSE_API_PORT = window.__ENV__?.VITE_GLUCOSE_API_PORT ??   import.meta.env.VITE_GLUCOSE_API_PORT;
+  const GLUCOSE_ROOT_PATH = window.__ENV__?.VITE_GLUCOSE_ROOT_PATH || '';
+  const GLUCOSE_API_PROTOCOL = window.__ENV__?.VITE_GLUCOSE_API_PROTOCOL || 'http';
   const containerRef = useRef(null);
   const safeData = Array.isArray(data) ? data : [];
   const [selectedDate, setSelectedDate] = useState("");
@@ -35,6 +40,44 @@ export default function GlucoseChart({ data }) {
     setSelectedDate(lastValid.timestamp.slice(0, 10));
   }, [safeData]);
 
+  useEffect(() => {
+    fetchData();
+    ws.connect(`${GLUCOSE_WS_PROTOCOL}://${GLUCOSE_API_HOST}:${GLUCOSE_API_PORT}/${GLUCOSE_ROOT_PATH}/ws?patient_id=${patient_id}`);
+
+    const handler = (payload) => {
+      console.log(payload)
+      if (payload.entity!="service") return;
+      if (!gridRef.current) return;
+      if (payload.operation=="delete"){
+          gridRef.current.api.applyTransaction({
+            remove: [payload.data],
+          });
+          console.info("Service row deleted",payload.data.ID)
+          return;
+      }
+      if (serviceType!=payload.data.ServiceType && serviceType!="All") return;
+      switch (payload.operation) {
+        case "change":
+          gridRef.current.api.applyTransaction({
+            update: [payload.data],
+          });
+          console.info("Service row updated",payload.data.ID)
+          break;
+        case "add":
+          gridRef.current.api.applyTransaction({
+            add: [payload.data],
+          });
+          console.info("Service row added",payload.data.ID)
+          break;
+        default:
+          console.warn("Unknown WS action", msg);
+      }
+    };
+
+    ws.on("entity", handler);
+
+    return () => ws.off("entity", handler);
+  }, [page, pageSize]);
   // kolečko + shift
   useEffect(() => {
     const el = containerRef.current;

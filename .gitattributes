@@ -1,0 +1,11 @@
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.svg -text
+*.ico binary
+
+# Default
+* text=auto

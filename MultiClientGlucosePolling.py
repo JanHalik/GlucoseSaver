@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import email
 import os, logging
@@ -165,10 +165,12 @@ def WS_notify_service(operation: WSOperation, patient_id: int, datetime: datetim
     async def _send():
         try:
             logging.log(msg=f"Viewer notification: {operation.value}/{EntityName.GLUCOSE.value}/{patient_id}",level=logging.INFO)
-            url = f"{VIEWER_URL}/view/websocket/notify/{operation.value}/{EntityName.GLUCOSE.value}/{patient_id}"
-            glucose = Glucose(value=value, timestamp=datetime)
+            #url = f"{VIEWER_URL}/view/websocket/notify/{operation.value}/{EntityName.GLUCOSE.value}/{patient_id}"
+            url = f"{VIEWER_URL}/measurements"
+
+
+            glucose = Glucose(PatientID=str(patient_id), Value=value, Time=datetime.isoformat(timespec="milliseconds")+"Z")
             logging.log(msg=f"Notification payload: {glucose}", level=logging.INFO)
-            breakpoint()
             async with httpx.AsyncClient(timeout=2) as client:
                 await client.post(url, json=glucose.model_dump(mode="json"), headers={"Content-Type": "application/json", "Accept": "application/json"})
         except Exception as e:

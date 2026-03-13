@@ -29,6 +29,20 @@ def read_csv_sync(path: Path):
     return rows
 
 router = APIRouter(prefix="/view")
+@router.get("/authenticate/", dependencies=[Depends(verify_api_password)])
+async def download(date: str, name: str):
+    filename = f"{date}_{name}_glucose.csv"
+    file_path = (CSV_DIR / filename).resolve()
+
+    # bezpečná kontrola proti path traversal
+    if not file_path.is_file() or CSV_DIR not in file_path.parents:
+        raise HTTPException(status_code=404, detail="CSV file not found")
+
+    rows = await asyncio.to_thread(read_csv_sync, file_path)
+    return rows
+
+
+router = APIRouter(prefix="/view")
 @router.post("/download/", dependencies=[Depends(verify_api_password)])
 async def download(date: str, name: str):
     filename = f"{date}_{name}_glucose.csv"
