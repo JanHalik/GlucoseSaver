@@ -29,7 +29,7 @@ def init_db():
         cursor.execute("""
         CREATE TABLE Client (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            Email TEXT,
+            Email TEXT NOT NULL UNIQUE,
             Password TEXT NOT NULL,
             AppUserID INTEGER NOT NULL,
             FOREIGN KEY (AppUserID)
@@ -43,7 +43,10 @@ def init_db():
         CREATE TABLE Patient (
             id TEXT PRIMARY KEY,
             FirstName TEXT,
-            LastName TEXT
+            LastName TEXT,
+            PollerState TEXT NOT NULL
+            CHECK(PollerState IN ('active','inactive','error'))
+            DEFAULT 'inactive'
         );
         """)
 

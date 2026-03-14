@@ -12,6 +12,17 @@ def create_relation(rel: schemas.ClientPatientAGCreate, db: Session = Depends(ge
     db.refresh(db_rel)
     return db_rel
 
+@router.delete("/{ClientID}/{PatientID}")
+def delete_relation(ClientID: int, PatientID:str, db: Session = Depends(get_db)):
+    relation = models.ClientPatientAG(
+        ClientID=ClientID,
+        PatientID=PatientID
+    )
+    if not relation:
+        raise HTTPException(404)
+    db.delete(relation)
+    db.commit()
+    return {"status": "deleted"}
 
 @router.get("")
 def get_relations(db: Session = Depends(get_db)):

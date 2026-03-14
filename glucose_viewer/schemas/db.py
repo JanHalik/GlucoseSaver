@@ -1,5 +1,7 @@
-from pydantic import BaseModel, SecretStr
+from pydantic import BaseModel, Field, SecretStr
 from datetime import datetime
+from shared.enums.db import PollerState as PollerStateEnum
+from typing import Optional
 
 class AppUserBase(BaseModel):
     Login: str
@@ -22,11 +24,10 @@ class AppUser(AppUserBase):
 class ClientBase(BaseModel):
     AppUserId: int
     Email: str | None
-
+    Password: str
 
 class ClientCreate(ClientBase):
-    Password: SecretStr
-
+    id: int
 
 class Client(ClientBase):
     id: int
@@ -46,6 +47,7 @@ class PatientCreate(PatientBase):
 
 class Patient(PatientBase):
     id: str
+    PollerState: Optional[PollerStateEnum] = Field(default=PollerStateEnum.INACTIVE, description="The state of the poller for this patient")
 
     class Config:
         from_attributes = True

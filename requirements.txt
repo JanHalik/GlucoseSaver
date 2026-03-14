@@ -1,5 +1,5 @@
 pylibrelinkup @ git+https://github.com/robberwick/pylibrelinkup.git
-uvicorn
+uvicorn[standard]
 fastapi
 prometheus-fastapi-instrumentator
 httpx

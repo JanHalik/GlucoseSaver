@@ -16,3 +16,10 @@ def create_patient(patient: schemas.PatientCreate, db: Session = Depends(get_db)
 @router.get("", response_model=list[schemas.Patient])
 def get_patients(db: Session = Depends(get_db)):
     return db.query(models.Patient).all()
+
+@router.get("/{patient_id}", response_model=schemas.Client)
+def get_client(patient_id: int, db: Session = Depends(get_db)):
+    patient = db.query(models.Patient).get(patient_id)
+    if not patient:
+        raise HTTPException(404)
+    return patient

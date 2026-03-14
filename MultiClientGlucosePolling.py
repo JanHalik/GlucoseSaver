@@ -8,7 +8,7 @@ import sys
 import asyncio
 from datetime import datetime
 from pylibrelinkup import PyLibreLinkUp, APIUrl
-
+import requests
 from glucose_viewer import manager
 from glucose_viewer.schemas.glucose import Glucose
 from shared.enums.general import WSOperation, EntityName
@@ -39,13 +39,16 @@ async def get_patients(client):
 PATIENT_REFRESH_INTERVAL = 60 * 60 * 2  # 2 hodiny
 INTERVAL = 600  # interval měření
 
+polled_patients: dict[str, PyLibreLinkUp] = {}
+
 
 class ClientWorker:
-    def __init__(self, email, password, api_url):
+    def __init__(self, email, password, api_url, client_id):
         self.email = email
         self.password = password
         self.api_url = api_url
         self.client = None
+        self.client_id = client_id
         self.patients = []
         self.last_patient_refresh = None
         self.running = True
@@ -67,6 +70,17 @@ class ClientWorker:
 
             if not self.patients:
                 print(f"[{self.email}] Žádní pacienti.")
+            else:
+                patients=getPatients(self.client_id)
+            # add missing patients
+            for patient in self.patients:
+                if not any(p["id"] == str(patient.patient_id) for p in patients):
+                    breakpoint()
+                    addPatient(self.client_id, patient.first_name, patient.last_name, str(patient.patient_id))
+            # filter patients to those with active poller state
+            patients=getPatients(self.client_id)
+            self.patients = [p for p in self.patients if not any(p["id"] == str(patient.patient_id) and p["PollerState"] == "active" for p in patients)]
+            breakpoint()
         except Exception as e:
             print(f"[{self.email}] Chyba při načítání pacientů: {e}")
 
@@ -115,12 +129,12 @@ class ClientManager:
     def __init__(self):
         self.workers = {}
 
-    async def add_client(self, email, password, api_url):
+    async def add_client(self, email, password, api_url, client_id):
         if email in self.workers:
             print(f"Klient {email} již běží.")
             return
 
-        worker = ClientWorker(email, password, api_url)
+        worker = ClientWorker(email, password, api_url, client_id)
         task = asyncio.create_task(worker.run())
 
         self.workers[email] = {
@@ -186,15 +200,153 @@ def WS_notify_service(operation: WSOperation, patient_id: int, datetime: datetim
             asyncio.run(_send())
         threading.Thread(target=runner, daemon=True).start()
 
+async def addMeasurement(patient_id: str, timestamp: datetime, value: float):
+    url = f"{VIEWER_URL}/measurements"
+    glucose = Glucose(PatientID=str(patient_id), Value=value, Time=timestamp.isoformat(timespec="milliseconds")+"Z")
+    logging.log(msg=f"Notification payload: {glucose}", level=logging.INFO)
+    async with httpx.AsyncClient(timeout=2) as client:
+        await client.post(url, json=glucose.model_dump(mode="json"), headers={"Content-Type": "application/json", "Accept": "application/json"})
+
+
+def getClients():
+    try:
+        url = f"{VIEWER_URL}/clients"
+        response=requests.get(url, headers={"Content-Type": "application/json", "Accept": "application/json"})
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        logging.log(msg=f"Viewer notification skipped: {e}",level=logging.ERROR)
+def getPatients(clientId)->str:
+    try:
+        url = f"{VIEWER_URL}/clients/{clientId}/patients"
+        response=requests.get(url, headers={"Content-Type": "application/json", "Accept": "application/json"})
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        logging.log(msg=f"Viewer notification skipped: {e}",level=logging.ERROR)
+def deleteRelation(clientId, patientId)->str:
+    try:
+        url = f"{VIEWER_URL}/client-patient/{clientId}/{patientId}"
+        response=requests.delete(url, headers={"Content-Type": "application/json", "Accept": "application/json"})
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        logging.log(msg=f"Viewer notification skipped: {e}",level=logging.ERROR)
+def addPatient(clientId,first_name,last_name, id)->str:
+    try:
+        #If Patient already exist then update with activate state else create new patient with active state and relation to client
+        url = f"{VIEWER_URL}/patients/{id}"
+        response=requests.get(url, headers={"Content-Type": "application/json", "Accept": "application/json"})
+        breakpoint()
+        if response.status_code == 200:
+            patient=response.json()
+            if patient["PollerState"]!="active":
+                url = f"{VIEWER_URL}/patients/{id}"
+                payload = {
+                    "FirstName": first_name,
+                    "LastName": last_name,
+                    "id": id,
+                    "PollerState": "active"
+                }
+                response=requests.put(url, json=payload, headers={"Content-Type": "application/json", "Accept": "application/json"})
+                response.raise_for_status()
+            else:
+                logging.log(msg=f"Patient {id} already active", level=logging.INFO)
+        else:
+            url = f"{VIEWER_URL}/patients"
+            payload = {
+                "FirstName": first_name,
+                "LastName": last_name,
+                "id": id,
+                "PollerState": "active"
+            }
+            response=requests.post(url, json=payload, headers={"Content-Type": "application/json", "Accept": "application/json"})
+            response.raise_for_status()
+        # create client-patient relation
+        url = f"{VIEWER_URL}/client-patient"
+        payload = {
+            "ClientID": clientId,
+            "PatientID": id
+        }
+        response=requests.post(url, json=payload, headers={"Content-Type": "application/json", "Accept": "application/json"})
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        logging.log(msg=f"Viewer notification skipped: {e}",level=logging.ERROR)
+
+async def polling_task():
+    while True:
+
+        for patient_id, client in polled_patients.items():
+
+            print(f"Polling patient {patient_id} for clients {client}")
+
+            try:
+                data = await fetch_latest(client, patient_id)
+                timestamp = data.timestamp
+                value = data.value
+
+                csv_line = f"{timestamp},{value},mol/l"
+                print(f"[{client.email}] {csv_line}")
+
+                await addMeasurement(patient_id, timestamp, value)
+            except Exception as e:
+                print(
+                    f"[{client.email}] "
+                    f"[{timestamp.utcnow().isoformat(timespec='seconds')}] "
+                    f"Chyba pacienta {patient_id}: {e}"
+                )
+
+        await asyncio.sleep(INTERVAL)
+
+async def refresh_patients_task():
+    while True:
+        clients=getClients()
+        for client in clients:
+            libre_client = await loginClient(client["Email"],client["Password"])
+            patients = await get_patients(libre_client)
+            libre_patients_id_list=[str(patient.patient_id) for patient in patients]
+            db_patients_id_list=[patient["id"] for patient in getPatients(client["id"])]
+            for patient in patients:
+                #Activate polling for patient if not already running
+                if patient.patient_id not in polled_patients:
+                    polled_patients[patient.patient_id] = libre_client
+                    print(f"Added patient {patient.patient_id} to polling list.")
+                #TODO Compare patients in DB if exist add client-patient connection and if patient does not exist then create
+                if str(patient.patient_id) not in db_patients_id_list:
+                    addPatient(client["id"],patient.first_name,patient.last_name, str(patient.patient_id))
+
+            # Compare patients in DB if missing remove client-patient connection
+            connections_to_remove=set(db_patients_id_list) - set(libre_patients_id_list)
+            for patient_id in connections_to_remove:
+                #TODO remove client-patient connection and remove patient from polled_patients and set polling as inactive
+                polled_patients.pop(patient_id, None)
+                deleteRelation(client["id"], patient_id)
+                print(f"Patient {patient_id} is missing in LibreLinkUp client {client['FirstName']} {client['LastName']}")
+
+
+        await asyncio.sleep(PATIENT_REFRESH_INTERVAL)
+async def loginClient(email,password)->PyLibreLinkUp:
+    client = PyLibreLinkUp(
+        email=email,
+        password=password,
+        api_url=APIUrl.EU
+    )
+    await authenticate(client)
+    return client
 
 async def main():
-    manager = ClientManager()
-    # počáteční klient
-    await manager.add_client(EMAIL, PASSWORD, APIUrl.EU)
+    await asyncio.gather(
+        polling_task(),
+        refresh_patients_task()
+    )
+    # manager = ClientManager()
+    # # počáteční klient
+    # await manager.add_client(EMAIL, PASSWORD, APIUrl.EU,1)
 
-    # aplikace běží dál a můžeš dynamicky přidávat klienty
-    while True:
-        await asyncio.sleep(3600)
+    # # aplikace běží dál a můžeš dynamicky přidávat klienty
+    # while True:
+    #     await asyncio.sleep(3600)
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Line } from "react-chartjs-2";
 import { cs } from "date-fns/locale";
-
+import ws from "../ws/websocketService";
 function addDays(dateStr, diff) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
@@ -10,39 +10,43 @@ function addDays(dateStr, diff) {
   return d.toISOString().slice(0, 10);
 }
 
-export default function GlucoseChart({ data }) {
-  const GLUCOSE_WS_PROTOCOL = GLUCOSE_API_PROTOCOL === 'https' ? 'wss' : 'ws';
+export default function GlucoseChart({ patient_id}) {
   const GLUCOSE_API_HOST = window.__ENV__?.VITE_GLUCOSE_API_HOST ??   import.meta.env.VITE_GLUCOSE_API_HOST;
   const GLUCOSE_API_PORT = window.__ENV__?.VITE_GLUCOSE_API_PORT ??   import.meta.env.VITE_GLUCOSE_API_PORT;
   const GLUCOSE_ROOT_PATH = window.__ENV__?.VITE_GLUCOSE_ROOT_PATH || '';
   const GLUCOSE_API_PROTOCOL = window.__ENV__?.VITE_GLUCOSE_API_PROTOCOL || 'http';
+  const GLUCOSE_WS_PROTOCOL = GLUCOSE_API_PROTOCOL === 'https' ? 'wss' : 'ws';
   const containerRef = useRef(null);
-  const safeData = Array.isArray(data) ? data : [];
-  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
+  const [filteredData, setFilteredData] = useState([]);
 
-  // inicializace dne z dat
-  useEffect(() => {
-    if (safeData.length === 0) return;
-    let lastValid;
-    for (let i = safeData.length - 1; i >= 0; i--) {
-      const d = safeData[i];
-      if (d?.timestamp && !isNaN(new Date(d.timestamp))) {
-        lastValid = d;
-        break;
-      }
-    }
 
-    // const firstValid = safeData.find(
-    //   d => d?.timestamp && !isNaN(new Date(d.timestamp))
-    // );
-    // if (!firstValid) return;
-
-    setSelectedDate(lastValid.timestamp.slice(0, 10));
-  }, [safeData]);
-
+   const [loading, setLoading] = useState(false);
+  // Funkce pro načtení dat
+  const fetchData = () => {
+    console.info("Loading...")
+    setLoading(true);
+    let url=`${GLUCOSE_API_PROTOCOL}://${GLUCOSE_API_HOST}:${GLUCOSE_API_PORT}/${GLUCOSE_ROOT_PATH}measurements/${patient_id}/day/${selectedDate}`;
+    const response = fetch(url,{
+    headers: {
+      Authorization: `IncognitoUms auth=${localStorage.getItem("GlucoseToken")}`,
+    },})
+      .then((res) => {
+        return res.json()})
+      .then((data) => {
+        console.info("Loaded")
+        setLoading(false);
+        console.log(data)
+        setFilteredData(data || []);
+      })
+      .catch((err) => {
+        console.error("Fetch error:", err);
+        setLoading(false);
+      });
+  };
   useEffect(() => {
     fetchData();
-    ws.connect(`${GLUCOSE_WS_PROTOCOL}://${GLUCOSE_API_HOST}:${GLUCOSE_API_PORT}/${GLUCOSE_ROOT_PATH}/ws?patient_id=${patient_id}`);
+    ws.connect(`${GLUCOSE_WS_PROTOCOL}://${GLUCOSE_API_HOST}:${GLUCOSE_API_PORT}/${GLUCOSE_ROOT_PATH}view/ws?patient_id=${patient_id}`);
 
     const handler = (payload) => {
       console.log(payload)
@@ -77,7 +81,7 @@ export default function GlucoseChart({ data }) {
     ws.on("entity", handler);
 
     return () => ws.off("entity", handler);
-  }, [page, pageSize]);
+  }, [selectedDate, patient_id]);
   // kolečko + shift
   useEffect(() => {
     const el = containerRef.current;
@@ -96,25 +100,14 @@ export default function GlucoseChart({ data }) {
     return () => el.removeEventListener("wheel", onWheel);
   }, [selectedDate]);
 
-  const filteredData = useMemo(() => {
-    if (!selectedDate) return [];
-    return safeData.filter(
-      d => d?.timestamp?.slice(0, 10) === selectedDate
-    );
-  }, [safeData, selectedDate]);
-
-  // prázdný stav
-  if (safeData.length === 0) {
-    return <div>Žádná data k dispozici</div>;
-  }
 
   const chartData = {
     datasets: [
       {
         label: "Glykémie (mmol/l)",
         data: filteredData.map(d => ({
-          x: d.timestamp.replace(" ", "T"), // ISO
-          y: d.value
+          x: d.Time.replace(" ", "T"), // ISO
+          y: d.Value
         })),
         borderColor: "#2563eb",
         tension: 0.3,

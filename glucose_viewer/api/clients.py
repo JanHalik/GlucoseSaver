@@ -6,10 +6,7 @@ from sqlalchemy.orm import Session
 router = APIRouter(prefix="/clients")
 @router.post("", response_model=schemas.Client)
 def create_client(client: schemas.ClientCreate, db: Session = Depends(get_db)):
-    client_data = client.model_dump()
-    # HASH PASSWORD
-    client_data["Password"] = client_data["Password"].get_secret_value()
-    db_client = models.Client(**client_data)
+    db_client = models.Client(**client.model_dump())
     db.add(db_client)
     db.commit()
     db.refresh(db_client)

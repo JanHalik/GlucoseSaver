@@ -8,20 +8,20 @@ import os,logging
 log = logging.getLogger("viewer")
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: dict[str, list[(str,WebSocket)]] = {}
+        self.active_connections: dict[str, list[WebSocket]] = {}
         # runs paralel running task on background
         asyncio.create_task(self.monitor_connections())
 
-    async def connect(self, websocket: WebSocket, patient_id: str, token:str):
+    async def connect(self, websocket: WebSocket, patient_id: str):
         await websocket.accept()
         if patient_id not in self.active_connections:
             self.active_connections[patient_id] = []
-        self.active_connections[patient_id].append((token,websocket))
+        self.active_connections[patient_id].append(websocket)
 
     def disconnect(self, websocket: WebSocket, patient_id: str):
         if patient_id in self.active_connections:
             self.active_connections[patient_id] = [
-                (t, ws) for (t, ws) in self.active_connections[patient_id]
+                ws for ws in self.active_connections[patient_id]
                 if ws != websocket
             ]
             if not self.active_connections[patient_id]:
@@ -30,7 +30,7 @@ class ConnectionManager:
 
     async def broadcast(self, message: dict, patient_id: str):
         if patient_id in self.active_connections:
-            for (token,ws) in self.active_connections[patient_id]:
+            for ws in self.active_connections[patient_id]:
                 log.info(f"Send datat to WS {patient_id}: {message}")
                 await ws.send_json(message)
     def has_patient_connection(self, patient_id):

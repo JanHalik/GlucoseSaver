@@ -27,7 +27,7 @@ class Client(Base):
     __tablename__ = "Client"
 
     id = Column(Integer, primary_key=True, index=True)
-    Email = Column(String(45))
+    Email = Column(String(45), unique=True, nullable=False)
     Password = Column(String(255))
     AppUserId = Column(Integer, ForeignKey("AppUser.id"))
 
@@ -40,7 +40,7 @@ class Patient(Base):
     id = Column(String(60), primary_key=True, index=True)
     FirstName = Column(String(45))
     LastName = Column(String(45))
-
+    PollerState = Column(String(20), nullable=False, default='inactive')
     clients = relationship("ClientPatientAG", back_populates="patient")
     data = relationship("PatientData", back_populates="patient")
 

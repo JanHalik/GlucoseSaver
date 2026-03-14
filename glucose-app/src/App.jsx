@@ -26,36 +26,12 @@ function App() {
     return () => window.removeEventListener("tokenExpired", handleExpired);
   }, []);
 
-  const [data, setData] = useState(null);
-  useEffect(() => {
-   fetch(`http://${GLUCOSE_API_HOST}:${GLUCOSE_API_PORT}/all_data?name=glucose`,{
-    method: "GET",
-    headers: {
-      "x-api-password": `${token}`,
-    }
-  },)
-      .then((res) => {
-        if (res.status === 401) {
-            // Token expiroval → odhlásit
-            localStorage.removeItem("GlucoseToken");
-            window.dispatchEvent(new Event("tokenExpired"));
-            return null;
-        }
-        return res.json()})
-      .then((data) => {
-        console.log(data);
-        setData(data.map(({ timestamp, glucose }) => ({
-          timestamp: timestamp.replace(" ", "T"),
-          value: glucose
-        })));
-      });
-  }, []);
   return token ? (
     <DarkModeProvider>
     <AppThemeProvider>
     <AppLayout onLogout={handleLogout} >
       <div style={{ width: "100%", height: "300px" }}>
-      <GlucoseChart data={data}/>
+      <GlucoseChart patient_id="019bf9ef-0b4c-7e44-ac30-481041d5925a" />
       </div>
     </AppLayout>
     </AppThemeProvider>
