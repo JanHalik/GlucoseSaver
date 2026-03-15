@@ -36,7 +36,6 @@ export default function GlucoseChart({ patient_id}) {
       .then((data) => {
         console.info("Loaded")
         setLoading(false);
-        console.log(data)
         setFilteredData(data || []);
       })
       .catch((err) => {
@@ -50,31 +49,11 @@ export default function GlucoseChart({ patient_id}) {
 
     const handler = (payload) => {
       console.log(payload)
-      if (payload.entity!="service") return;
-      if (!gridRef.current) return;
-      if (payload.operation=="delete"){
-          gridRef.current.api.applyTransaction({
-            remove: [payload.data],
-          });
-          console.info("Service row deleted",payload.data.ID)
-          return;
-      }
-      if (serviceType!=payload.data.ServiceType && serviceType!="All") return;
       switch (payload.operation) {
-        case "change":
-          gridRef.current.api.applyTransaction({
-            update: [payload.data],
-          });
-          console.info("Service row updated",payload.data.ID)
+        case "add": {
+          setFilteredData(prev => [...prev, payload.data]);
           break;
-        case "add":
-          gridRef.current.api.applyTransaction({
-            add: [payload.data],
-          });
-          console.info("Service row added",payload.data.ID)
-          break;
-        default:
-          console.warn("Unknown WS action", msg);
+        }
       }
     };
 

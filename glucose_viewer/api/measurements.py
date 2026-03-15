@@ -7,13 +7,13 @@ from fastapi import FastAPI, Request, HTTPException, Header, Depends, APIRouter
 from sqlalchemy.orm import Session
 router = APIRouter(prefix="/measurements")
 @router.post("", response_model=schemas.PatientData)
-def create_measurement(data: schemas.PatientDataCreate, db: Session = Depends(get_db)):
+async def create_measurement(data: schemas.PatientDataCreate, db: Session = Depends(get_db)):
     db_data = models.PatientData(**data.model_dump())
     db.add(db_data)
     db.commit()
     db.refresh(db_data)
 
-    notify_entity_change(MessageType.ENTITY,WSOperation.ADD,EntityName.GLUCOSE, {"datetime":db_data.Time.isoformat(), "value": db_data.Value}, db_data.PatientID)
+    await notify_entity_change(MessageType.ENTITY,WSOperation.ADD,EntityName.GLUCOSE, {"Time":db_data.Time.isoformat(), "Value": db_data.Value}, db_data.PatientID)
     return db_data
 
 

@@ -4,8 +4,13 @@ from typing import List
 import asyncio
 from datetime import datetime, timezone
 # Správa připojených klientů
-import os,logging
+import os,logging,sys
 log = logging.getLogger("viewer")
+log.setLevel(logging.DEBUG)
+# handler zapisující do stdout
+handler = logging.StreamHandler(sys.stdout)
+# přidání handleru k loggeru
+log.addHandler(handler)
 class ConnectionManager:
     def __init__(self):
         self.active_connections: dict[str, list[WebSocket]] = {}
@@ -16,6 +21,10 @@ class ConnectionManager:
         await websocket.accept()
         if patient_id not in self.active_connections:
             self.active_connections[patient_id] = []
+        if websocket in self.active_connections[patient_id]:
+            log.info(f"Websocket already connected for patient {patient_id}")
+            return
+        log.info(f"Add ws connection for patient {patient_id}")
         self.active_connections[patient_id].append(websocket)
 
     def disconnect(self, websocket: WebSocket, patient_id: str):
@@ -41,4 +50,6 @@ class ConnectionManager:
         while True:
             now = datetime.now(timezone.utc)
             log.info(f"Test active connections: {now}")
+            for patient_id, sockets in list(self.active_connections.items()):
+                log.info(f"Test connection: {patient_id} - {len(sockets)} sockets")
             await asyncio.sleep(300)  # check every 30s

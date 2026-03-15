@@ -40,6 +40,7 @@ PATIENT_REFRESH_INTERVAL = 60 * 60 * 2  # 2 hodiny
 INTERVAL = 600  # interval měření
 
 polled_patients: dict[str, PyLibreLinkUp] = {}
+logged_in_clients: dict[str, PyLibreLinkUp] = {}
 
 
 class ClientWorker:
@@ -237,18 +238,11 @@ def addPatient(clientId,first_name,last_name, id)->str:
         #If Patient already exist then update with activate state else create new patient with active state and relation to client
         url = f"{VIEWER_URL}/patients/{id}"
         response=requests.get(url, headers={"Content-Type": "application/json", "Accept": "application/json"})
-        breakpoint()
         if response.status_code == 200:
             patient=response.json()
             if patient["PollerState"]!="active":
-                url = f"{VIEWER_URL}/patients/{id}"
-                payload = {
-                    "FirstName": first_name,
-                    "LastName": last_name,
-                    "id": id,
-                    "PollerState": "active"
-                }
-                response=requests.put(url, json=payload, headers={"Content-Type": "application/json", "Accept": "application/json"})
+                url = f"{VIEWER_URL}/patients/{id}/activate"
+                response=requests.put(url, headers={"Content-Type": "application/json", "Accept": "application/json"})
                 response.raise_for_status()
             else:
                 logging.log(msg=f"Patient {id} already active", level=logging.INFO)
@@ -332,14 +326,26 @@ async def loginClient(email,password)->PyLibreLinkUp:
         password=password,
         api_url=APIUrl.EU
     )
-    await authenticate(client)
-    return client
+    if email not in logged_in_clients:
+        await authenticate(client)
+        logged_in_clients[email] = client
+    return logged_in_clients[email]
 
 async def main():
-    await asyncio.gather(
-        polling_task(),
-        refresh_patients_task()
-    )
+    try:
+        await asyncio.gather(
+            polling_task(),
+            refresh_patients_task()
+        )
+    finally:
+        print("Service Glucose stopped.")
+        #Update poller state to inactive for all patients in polled_patients
+        for patient_id in polled_patients.keys():
+            url = f"{VIEWER_URL}/patients/{patient_id}/deactivate"
+            async with httpx.AsyncClient(timeout=2) as client:
+                await client.put(url, headers={"Content-Type": "application/json", "Accept": "application/json"})
+
+
     # manager = ClientManager()
     # # počáteční klient
     # await manager.add_client(EMAIL, PASSWORD, APIUrl.EU,1)

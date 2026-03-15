@@ -4,8 +4,13 @@ from enum import Enum
 from glucose_viewer.app_context import manager
 from glucose_viewer.schemas.glucose import Glucose
 router = APIRouter(prefix="/view")
-import os,logging
+import os,logging, sys
 log = logging.getLogger("viewer")
+log.setLevel(logging.DEBUG)
+# handler zapisující do stdout
+handler = logging.StreamHandler(sys.stdout)
+# přidání handleru k loggeru
+log.addHandler(handler)
 class WSOperation(str,Enum):
     CHANGE="change"
     ADD="add"

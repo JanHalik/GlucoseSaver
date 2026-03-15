@@ -39,7 +39,7 @@ class Client(ClientBase):
 class PatientBase(BaseModel):
     FirstName: str | None
     LastName: str | None
-
+    PollerState: Optional[PollerStateEnum] = Field(default=PollerStateEnum.INACTIVE, description="The state of the poller for this patient")
 
 class PatientCreate(PatientBase):
     id: str
@@ -47,8 +47,6 @@ class PatientCreate(PatientBase):
 
 class Patient(PatientBase):
     id: str
-    PollerState: Optional[PollerStateEnum] = Field(default=PollerStateEnum.INACTIVE, description="The state of the poller for this patient")
-
     class Config:
         from_attributes = True
 
