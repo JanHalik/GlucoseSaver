@@ -14,6 +14,12 @@ class AppUserBase(BaseModel):
 class AppUserCreate(AppUserBase):
     Password: SecretStr
 
+class AuthenticateAppUser(BaseModel):
+    Login: str
+    Password: SecretStr
+
+class AuthResponse(BaseModel):
+    access_token: str
 
 class AppUser(AppUserBase):
     id: int
@@ -22,7 +28,6 @@ class AppUser(AppUserBase):
         from_attributes = True
 
 class ClientBase(BaseModel):
-    AppUserId: int
     Email: str | None
     Password: str
 

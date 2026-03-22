@@ -6,7 +6,8 @@ from sqlalchemy import (
     Float,
     DateTime,
     ForeignKey,
-    Index
+    Index,
+    UUID
 )
 from sqlalchemy.orm import declarative_base, relationship
 
@@ -14,7 +15,7 @@ Base = declarative_base()
 class AppUser(Base):
     __tablename__ = "AppUser"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(UUID, primary_key=True, index=True)
     Login = Column(String(45), unique=True, nullable=False)
     Password = Column(String(255), nullable=False)
     Email = Column(String(45))

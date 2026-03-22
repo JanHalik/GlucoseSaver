@@ -16,7 +16,7 @@ def init_db():
         # APP_USER
         cursor.execute("""
         CREATE TABLE AppUser (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id UUID PRIMARY KEY,
             Login TEXT NOT NULL UNIQUE,
             FirstName TEXT,
             LastName TEXT,
