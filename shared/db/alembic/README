@@ -1,0 +1,24 @@
+Generic single-database configuration.Generic single-database configuration.
+🔹 Vytvoření první migrace
+
+Po inicializaci Alembicu:
+
+alembic init shared/custom_api/db/alembic
+
+
+pak vygeneruj první migraci:
+
+alembic revision --autogenerate -m "Initial schema"
+
+
+Tím se v db/alembic/versions/ vytvoří soubor, kde uvidíš DDL podle našich modelů.
+
+🔹 Aplikace migrace
+alembic upgrade head
+
+
+Tím se vytvoří všechny tabulky v DB (dpdb) podle ORM modelů.
+
+Vyčištění Alembic a začít od začátku:
+
+DELETE FROM alembic_version;

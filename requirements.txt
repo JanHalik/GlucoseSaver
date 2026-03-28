@@ -3,6 +3,7 @@ uvicorn[standard]
 fastapi
 prometheus-fastapi-instrumentator
 httpx
+alembic
 sqlalchemy
 psycopg2-binary
 passlib[argon2]
