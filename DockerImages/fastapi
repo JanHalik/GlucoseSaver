@@ -1,0 +1,77 @@
+server {
+    listen 80;
+    server_name _;
+
+    return 301 https://130.162.239.159:443/;
+}
+server {
+    listen 5173;
+    server_name _;
+
+    location / {
+        proxy_pass http://127.0.0.1:5174/;  # zakončení / je důležité
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+server {
+    listen 8088;
+    server_name _;
+
+    location / {
+        proxy_pass http://127.0.0.1:8087/;  # zakončení / je důležité
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+server {
+    listen 443 ssl default_server;
+    server_name _;
+
+    ssl_certificate /etc/nginx/ssl/cert_glucose.pem;
+    ssl_certificate_key /etc/nginx/ssl/key_glucose.pem;
+    # veřejné API
+    # API dokumentace /docs
+    location /docs/ {
+        proxy_pass http://127.0.0.1:8087/docs/;  # zakončení / je důležité
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # zbytek aplikace pod /app
+    location /app/ {
+        proxy_pass http://127.0.0.1:8088/;  # FastAPI běží na rootu
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    location / {
+        proxy_pass http://127.0.0.1:5174;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+    # websocket
+#    location /ws/ {
+#        proxy_pass http://127.0.0.1:8000;
+#        proxy_http_version 1.1;
+#        proxy_set_header Upgrade $http_upgrade;
+#        proxy_set_header Connection "upgrade";
+#    }
+
+    # ❌ interní endpoint - omezený přístup
+    location /internal/ {
+        allow 127.0.0.1;        # localhost (poller)
+        allow 10.0.0.0/8;       # privátní síť (OCI apod.)
+        allow 192.168.0.0/16;
+        deny all;
+
+        proxy_pass http://127.0.0.1:8000;
+    }
+}

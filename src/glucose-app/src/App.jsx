@@ -7,8 +7,8 @@ import { DarkModeProvider } from "./contexts/DarkModeContext";
 import "./chartjs";
 
 function App() {
-  const GLUCOSE_API_HOST = import.meta.env.VITE_GLUCOSE_API_HOST;
-  const GLUCOSE_API_PORT = import.meta.env.VITE_GLUCOSE_API_PORT;
+  const GLUCOSE_API_HOST = window.__ENV__?.VITE_GLUCOSE_API_HOST ??  import.meta.env.VITE_GLUCOSE_API_HOST;
+  const GLUCOSE_API_PORT = window.__ENV__?.VITE_GLUCOSE_API_PORT ??  import.meta.env.VITE_GLUCOSE_API_PORT;
   const [token, setToken] = useState(localStorage.getItem("GlucoseToken"));
   const [expired, setExpired] = useState(false);
 

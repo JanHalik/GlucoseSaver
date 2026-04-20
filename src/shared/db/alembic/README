@@ -3,7 +3,7 @@ Generic single-database configuration.Generic single-database configuration.
 
 Po inicializaci Alembicu:
 
-alembic init shared/custom_api/db/alembic
+alembic init shared/db/alembic
 
 
 pak vygeneruj první migraci:

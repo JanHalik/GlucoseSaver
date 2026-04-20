@@ -3,7 +3,7 @@ FROM ubuntu:24.04
 # Nastavení non-interactive režimu
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Aktualizace systému + základní balíčky
+# Instalace systémových závislostí
 RUN apt-get update && apt-get install -y \
     software-properties-common \
     curl \
@@ -23,14 +23,12 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     libxmlsec1-dev \
     liblzma-dev \
-    nginx \
-    openssl \
     && rm -rf /var/lib/apt/lists/*
 
 # Instalace Python 3.12.3 ze source (Ubuntu repo může mít jinou patch verzi)
 WORKDIR /tmp
 
-RUN wget https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tgz && \
+RUN wget https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tgz --no-check-certificate && \
     tar -xzf Python-3.12.3.tgz && \
     cd Python-3.12.3 && \
     ./configure --enable-optimizations && \
@@ -44,9 +42,6 @@ RUN ln -sf /usr/local/bin/python3.12 /usr/bin/python3 && \
 # Vyčištění
 RUN rm -rf /tmp/Python-3.12.3*
 
-
-
-
 # Nastavení pracovního adresáře
 WORKDIR /var/www
 
@@ -57,28 +52,15 @@ COPY requirements.txt .
 RUN pip3.12 install --upgrade pip
 RUN pip3.12 install --no-cache-dir -r requirements.txt
 
-# Kopírování celé aplikace
-COPY . .
+# Kopírování nezbytných adresářů
+COPY alembic.ini .
+COPY src/glucose_viewer/ ./src/glucose_viewer/
+COPY src/shared/ ./src/shared/
+COPY DockerImages/Glucosestart.sh .
 
 # Povolení start skriptu
-RUN chmod +x DockerImages/Glucosestart.sh
+RUN chmod +x Glucosestart.sh
 
-# Vytvoření self-signed certifikátu
-RUN mkdir -p /etc/nginx/ssl && \
-    openssl req -x509 -nodes -days 365 \
-    -newkey rsa:2048 \
-    -keyout /etc/nginx/ssl/nginx.key \
-    -out /etc/nginx/ssl/nginx.crt \
-    -subj "/C=CZ/ST=Czech/L=Usti/O=Dev/CN=localhost"
-
-# Vlastní nginx config
-RUN rm /etc/nginx/sites-enabled/default
-
-COPY DockerImages/nginx.conf /etc/nginx/conf.d/default.conf
-
-# Expose port pro nginx
-EXPOSE 443
-
-
+EXPOSE 8080
 # Start containeru přes start skript
-#CMD ["./Glucosestart.sh"]
+CMD [". Glucosestart.sh"]

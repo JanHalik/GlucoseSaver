@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from glucose_viewer.api import GlukoseAPI, WebSocket, clients, patients, measurements, relationCP, appUsers
+from glucose_viewer.api import relationCP
 from glucose_viewer.exceptions.exceptions  import GlucoseAPIException
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -8,6 +8,8 @@ from typing import List
 import time
 import asyncio
 import os,logging, traceback
+
+from glucose_viewer.api import GlukoseAPI, WebSocket, appUsers, clients, measurements, patients
 API_VERSION = "1.1.0"
 API_PASSWORD = os.getenv("API_PASSWORD", "change-me")
 REACT_HOST = os.getenv("REACT_HOST", "localhost")

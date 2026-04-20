@@ -1,0 +1,1 @@
+docker build -f DockerImages/GlucoseGUIDockerfile -t glucose_gui .
